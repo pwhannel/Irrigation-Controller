@@ -1,0 +1,183 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+/* Put your SSID & Password */
+const char* ssid = "**********";  // Enter SSID here
+const char* password = "**********";  //Enter Password here
+
+/* Put IP Address details */
+IPAddress local_ip(10,0,1,94);
+IPAddress gateway(10,0,1,1);
+IPAddress subnet(255,255,255,0);
+
+ESP8266WebServer server(80);
+
+uint8_t valve1 = D4;
+bool valve1status = LOW;
+
+uint8_t valve2 = D5;
+bool valve2status = LOW;
+
+uint8_t valve3 = D6;
+bool valve3status = LOW;
+
+uint8_t valve4 = D7;
+bool valve4status = LOW;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(valve1, OUTPUT);
+  pinMode(valve2, OUTPUT);
+  pinMode(valve3, OUTPUT);
+  pinMode(valve4, OUTPUT);
+
+  WiFi.begin(ssid, password);
+//check wi-fi is connected to wi-fi network
+  while (WiFi.status() != WL_CONNECTED) {
+  delay(1000);
+  Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected..!");
+  Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
+  
+  server.on("/", handle_OnConnect);
+  server.on("/valve1on", handle_valve1on);
+  server.on("/valve1off", handle_valve1off);
+  server.on("/valve2on", handle_valve2on);
+  server.on("/valve2off", handle_valve2off);
+  server.on("/valve3on", handle_valve3on);
+  server.on("/valve3off", handle_valve3off);
+  server.on("/valve4on", handle_valve4on);
+  server.on("/valve4off", handle_valve4off);
+  server.onNotFound(handle_NotFound);
+  
+  server.begin();
+  Serial.println("HTTP server started");
+}
+void loop() {
+  server.handleClient();
+  if(valve1status)
+  {digitalWrite(valve1, HIGH);}
+  else
+  {digitalWrite(valve1, LOW);}
+  
+  if(valve2status)
+  {digitalWrite(valve2, HIGH);}
+  else
+  {digitalWrite(valve2, LOW);}
+
+  if(valve3status)
+  {digitalWrite(valve3, HIGH);}
+  else
+  {digitalWrite(valve3, LOW);}
+
+  if(valve4status)
+  {digitalWrite(valve4, HIGH);}
+  else
+  {digitalWrite(valve4, LOW);}
+}
+
+void handle_OnConnect() {
+  valve1status = LOW;
+  valve2status = LOW;
+  valve3status = LOW;
+  valve4status = LOW;
+  Serial.println("GPIO4 Status: OFF | GPIO5 Status: OFF| GPIO6 Status: OFF| GPIO7 Status: OFF");
+  server.send(200, "text/html", SendHTML(valve1status,valve2status)); 
+}
+
+void handle_valve1on() {
+  valve1status = HIGH;
+  Serial.println("GPIO4 Status: ON");
+  server.send(200, "text/html", SendHTML(true,valve1status)); 
+}
+
+void handle_valve1off() {
+  valve1status = LOW;
+  Serial.println("GPIO4 Status: OFF");
+  server.send(200, "text/html", SendHTML(false,valve1status)); 
+}
+
+void handle_valve2on() {
+  valve2status = HIGH;
+  Serial.println("GPIO5 Status: ON");
+  server.send(200, "text/html", SendHTML(valve2status,true)); 
+}
+
+void handle_valve2off() {
+  valve2status = LOW;
+  Serial.println("GPIO5 Status: OFF");
+  server.send(200, "text/html", SendHTML(valve2status,false)); 
+}
+
+void handle_valve3on() {
+  valve3status = HIGH;
+  Serial.println("GPIO6 Status: ON");
+  server.send(200, "text/html", SendHTML(valve3status,true)); 
+}
+
+void handle_valve3off() {
+  valve3status = LOW;
+  Serial.println("GPIO6 Status: OFF");
+  server.send(200, "text/html", SendHTML(valve3status,false)); 
+}
+
+void handle_valve4on() {
+  valve4status = HIGH;
+  Serial.println("GPIO7 Status: ON");
+  server.send(200, "text/html", SendHTML(valve4status,true)); 
+}
+
+void handle_valve4off() {
+  valve4status = LOW;
+  Serial.println("GPIO7 Status: OFF");
+  server.send(200, "text/html", SendHTML(valve4status,false)); 
+}
+
+void handle_NotFound(){
+  server.send(404, "text/plain", "Not found");
+}
+
+String SendHTML(uint8_t valve1status,uint8_t valve2status){
+  String ptr = "<!DOCTYPE html> <html>\n";
+  ptr +="<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
+  ptr +="<title>Compton Wood House - Irrigation Control v.3</title>\n";
+  ptr +="<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
+  ptr +="body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;} h3 {color: #444444;margin-bottom: 50px;}\n";
+  ptr +=".button {display: block;width: 80px;background-color: #1abc9c;border: none;color: white;padding: 13px 30px;text-decoration: none;font-size: 25px;margin: 0px auto 35px;cursor: pointer;border-radius: 4px;}\n";
+  ptr +=".button-on {background-color: #1abc9c;}\n";
+  ptr +=".button-on:active {background-color: #16a085;}\n";
+  ptr +=".button-off {background-color: #34495e;}\n";
+  ptr +=".button-off:active {background-color: #2c3e50;}\n";
+  ptr +="p {font-size: 14px;color: #888;margin-bottom: 10px;}\n";
+  ptr +="</style>\n";
+  ptr +="</head>\n";
+  ptr +="<body>\n";
+  ptr +="<h1>Arduino Nano Web Server</h1>\n";
+  ptr +="<h3>Using Access Point(AP) Mode</h3>\n";
+  
+   if(valve1status)
+  {ptr +="<p>Valve 1: ON</p><a class=\"button button-off\" href=\"/1off\">OFF</a>\n";}
+  else
+  {ptr +="<p>Valve 1: OFF</p><a class=\"button button-on\" href=\"/1on\">ON</a>\n";}
+
+  if(valve2status)
+  {ptr +="<p>Valve 2: ON</p><a class=\"button button-off\" href=\"/2off\">OFF</a>\n";}
+  else
+  {ptr +="<p>Valve 2: OFF</p><a class=\"button button-on\" href=\"/2on\">ON</a>\n";}
+
+  if(valve3status)
+  {ptr +="<p>Valve 3: ON</p><a class=\"button button-off\" href=\"/2off\">OFF</a>\n";}
+  else
+  {ptr +="<p>Valve 3: OFF</p><a class=\"button button-on\" href=\"/2on\">ON</a>\n";}
+
+  if(valve4status)
+  {ptr +="<p>Valve 4: ON</p><a class=\"button button-off\" href=\"/2off\">OFF</a>\n";}
+  else
+  {ptr +="<p>Valve 4: OFF</p><a class=\"button button-on\" href=\"/2on\">ON</a>\n";}
+
+  ptr +="</body>\n";
+  ptr +="</html>\n";
+  return ptr;
+}
